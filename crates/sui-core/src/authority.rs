@@ -3182,6 +3182,7 @@ impl AuthorityState {
             chain_identifier,
             congestion_tracker: Arc::new(CongestionTracker::new()),
             traffic_controller,
+            tx_handler: TxHandler::default(),
         });
 
         let state_clone = Arc::downgrade(&state);
