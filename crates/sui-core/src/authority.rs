@@ -1731,40 +1731,7 @@ impl AuthorityState {
                 .force_reload_system_packages(&BuiltInFramework::all_package_ids());
         }
 
-        let raw_events = transaction_outputs.events.clone();
 
-        let sui_events: Vec<SuiEvent> = raw_events
-            .data
-            .iter()
-            .enumerate()
-            .map(|(seq, event)| {
-                let mut layout_resolver = epoch_store.executor().type_layout_resolver(Box::new(
-                    PackageStoreWithFallback::new(
-                        &inner_temporary_store,
-                        self.get_backing_package_store(),
-                    ),
-                ));
-                let layout = layout_resolver.get_annotated_layout(&event.type_)?;
-                SuiEvent::try_from(
-                    event.clone(),
-                    *certificate.digest(),
-                    seq as u64,
-                    None,
-                    layout,
-                )
-            })
-            .collect::<Result<_, _>>()?;
-
-        if !certificate.transaction_data().is_system_tx()
-            && !sui_events.is_empty()
-            && !transaction_outputs.written.is_empty()
-        {
-            let effects = transaction_outputs.effects.clone();
-            let _ = self
-                .tx_handler
-                .send_tx_effects_and_events(effects, sui_events)
-                .await;
-        }
 
         match self.execution_scheduler.as_ref() {
             ExecutionSchedulerWrapper::ExecutionScheduler(_) => {}
@@ -2901,6 +2868,7 @@ impl AuthorityState {
                 .tap_err(|e| error!(?tx_digest, "Post processing - Couldn't index tx: {e}"))
                 .expect("Indexing tx should not fail");
 
+            let effects_t  = effects.clone();
             let effects: SuiTransactionBlockEffects = effects.clone().try_into()?;
             let events = self.make_transaction_block_events(
                 events.clone(),
@@ -2927,6 +2895,17 @@ impl AuthorityState {
             self.metrics
                 .post_processing_total_events_emitted
                 .inc_by(events.data.len() as u64);
+
+
+
+            if !certificate.transaction_data().is_system_tx()
+                && !events.is_empty()
+            {
+                let _ =async{ self
+                    .tx_handler
+                    .send_tx_effects_and_events(&effects_t, events.data)
+                    .await};
+            }
         };
         Ok(())
     }
