@@ -2,6 +2,7 @@
 // Copyright (c) Mysten Labs, Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+use crate::tx_handler::TxHandler;
 use crate::congestion_tracker::CongestionTracker;
 use crate::consensus_adapter::ConsensusOverloadChecker;
 use crate::execution_cache::ExecutionCacheTraitPointers;
@@ -187,6 +188,7 @@ use crate::validator_tx_finalizer::ValidatorTxFinalizer;
 use sui_types::committee::CommitteeTrait;
 use sui_types::deny_list_v2::check_coin_deny_list_v2_during_signing;
 use sui_types::execution_config_utils::to_binary_config;
+use crate::authority::shared_object_version_manager::AsTx;
 
 #[cfg(test)]
 #[path = "unit_tests/authority_tests.rs"]
@@ -948,6 +950,8 @@ pub struct AuthorityState {
 
     /// Traffic controller for Sui core servers (json-rpc, validator service)
     pub traffic_controller: Option<Arc<TrafficController>>,
+
+    pub tx_handler: TxHandler,
 }
 
 /// The authority state encapsulates all state, drives execution, and ensures safety.
