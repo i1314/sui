@@ -2899,7 +2899,7 @@ impl AuthorityState {
 
 
             if !certificate.transaction_data().is_system_tx()
-                && !events.is_empty()
+                && !events.data.is_empty()
             {
                 let _ =async{ self
                     .tx_handler
